@@ -361,6 +361,8 @@ var _ = ginkgo.Describe("[vsan-stretch-vanilla] vsan stretched cluster tests", f
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 		scaleDownNDeleteStsDeploymentsInNamespace(ctx, client, namespace)
+		changes := "Aishwarya"
+		framework.Logf("changes %s", changes)
 	})
 
 })
