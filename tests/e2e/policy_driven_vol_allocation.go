@@ -122,6 +122,7 @@ var _ = ginkgo.Describe("[vol-allocation] Policy driven volume space allocation 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		setVpxdTaskTimeout(ctx, 0) // reset vpxd timeout to default
+<<<<<<< HEAD
 		if supervisorCluster {
 			dumpSvcNsEventsOnTestFailure(client, namespace)
 		}
@@ -145,6 +146,18 @@ var _ = ginkgo.Describe("[vol-allocation] Policy driven volume space allocation 
 					"Failed to delete PVC", pvc.Name)
 			}
 
+=======
+
+		if supervisorCluster {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			framework.Logf("Collecting supervisor PVC events before performing PV/PVC cleanup")
+			eventList, err := client.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
+			gomega.Expect(err).NotTo(gomega.HaveOccurred())
+			for _, item := range eventList.Items {
+				framework.Logf(fmt.Sprintf(item.Message))
+			}
+>>>>>>> 501c5365 (Remove deprecated storageclass annotation)
 		}
 	})
 
