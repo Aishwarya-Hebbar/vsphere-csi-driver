@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"rand"
 	"reflect"
 	"strconv"
 	"strings"
@@ -1394,4 +1395,54 @@ func (vs *vSphere) findKeyProvier(ctx context.Context, keyProviderID string) (*v
 	}
 
 	return nil, nil
+}
+
+// renameDs
+func (vs *vSphere) renameDs(ctx context.Context, datastoreName string) {
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	randomStr := strconv.Itoa(r1.Intn(1000))
+	req := vim25types.RenameDatastore{
+		This:    defaultDatastore.Reference(),
+		NewName: datastoreName + randomStr,
+	}
+
+	res, err := vim25methods.RenameDatastore(ctx, e2eVSphere.Client.Client, &req)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+}
+
+func (vs *vSphere) fetchDatastoreNameFromDatastoreUrl(ctx context.Context, volumeID string) (string, error) {
+	dsUrl := fetchDsUrl4CnsVol(*vs, volumeID)
+
+	finder.SetDatacenter(dc)
+	datastores, err := finder.DatastoreList(ctx, "*")
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
+
+	datastoreName := ""
+	for _, ds := range datastores {
+		if dsUrl == ds.DatastoreUrl {
+			datastoreName = ds.Name
+			break
+		}
+	}
+	if datastoreName == "" {
+		return "", fmt.Errorf("failed to find datastoreName with datastore url: %s", dsUrl)
+	}
+
+	return datastoreName, nil
+}
+
+// renameDs
+func (vs *vSphere) renameDsInParallel(ctx context.Context, datastoreName string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	randomStr := strconv.Itoa(r1.Intn(1000))
+	req := vim25types.RenameDatastore{
+		This:    defaultDatastore.Reference(),
+		NewName: datastoreName + randomStr,
+	}
+
+	res, err := vim25methods.RenameDatastore(ctx, e2eVSphere.Client.Client, &req)
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 }

@@ -27,6 +27,8 @@ import (
 	"sync"
 	"time"
 
+	snapV1 "github.com/kubernetes-csi/external-snapshotter/client/v6/apis/volumesnapshot/v1"
+	snapclient "github.com/kubernetes-csi/external-snapshotter/client/v6/clientset/versioned"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/vmware/govmomi/find"
@@ -1283,4 +1285,23 @@ func checkForEventWithMessage(client clientset.Interface, namespace string,
 		}
 	}
 	return eventFound
+}
+
+// createDynamicSnapshotInParallel creates dynamic volumesnapshots from
+// a list of PVCs in a given namespace in parallel
+func createDynamicSnapshotInParallel(ctx context.Context, namespace string,
+	snapc *snapclient.Clientset, pvcList []*v1.PersistentVolumeClaim, volumeSnapshotClassName string,
+	ch chan *snapV1.VolumeSnapshot, lock *sync.Mutex, wg *sync.WaitGroup) {
+	defer wg.Done()
+	ginkgo.By("Create a volume snapshot")
+	for _, pvc := range pvcList {
+		snapshot, err := snapc.SnapshotV1().VolumeSnapshots(namespace).Create(ctx,
+			getVolumeSnapshotSpec(namespace, volumeSnapshotClassName, pvc.Name), metav1.CreateOptions{})
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		lock.Lock()
+		ch <- snapshot
+		lock.Unlock()
+		framework.Logf("Volume snapshot name is : %s", snapshot.Name)
+	}
+
 }
